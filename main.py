@@ -1,9 +1,13 @@
 import os
+import json
 from app.common.preprocess import preprocess_default
+
+
+#CONFIG = json.load(open('config.json'))
+
 
 preprocess_default()
 
-os.makedirs('app/data/final', exist_ok=True)
-
-with open('app/data/final/results.tsv', 'w', encoding='utf-8') as f:
+with open('environment/results.tsv', 'w', encoding='utf-8') as f:
     f.write('test')
+
