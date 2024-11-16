@@ -88,35 +88,35 @@ os.makedirs(CONFIG['final/'], exist_ok=True)
 
 with open(CONFIG['final/results'], 'w', encoding='utf-8') as f:
     f.write('test')
+from app.common.holder import HoldersList, Holder, iteratively_estimate_indirect_shares, build_tree
+from app.common.preprocess import preprocess_default
 
-def kopeika(company_df,founder_legal_df,founder_natural_df):
+def kopeika(company_df, natural_df, founder_legal_df, founder_natural_df):
+    nonterminal, terminal = build_tree(
+        company_df=company_df,
+        natural_df=natural_df,
+        founder_legal_df=founder_legal_df,
+        founder_natural_df=founder_natural_df,
+    )
 
-    # Создаем структуру владения
-    structure = OwnershipStructure(company_df, founder_legal_df, founder_natural_df)
-
-    # Преобразуем данные в формат для Holder
-    holders, holder_ids = [], []
-    for company_id, company in structure.companies.items():
-        holders.append(
-            Holder(
-                id=company_id,
-                shares=[
-                    (owner['id'], owner['share_percent'] / 100)
-                    for owner in company['owners']
-                    if owner['type'] == 'legal'
-                ],
-                holders=[]
-            )
-        )
-        holder_ids.append(company_id)
-
-    # Инициализируем HoldersList
-    holders_list = HoldersList(holders, holder_ids)
-
-    # Вычисляем косвенные доли
-    indirect_shares = iteratively_estimate_indirect_shares(holders_list, holders_list)
+    indirect_shares = iteratively_estimate_indirect_shares(
+        nonterminal=nonterminal,
+        terminal=terminal,
+    )
     
     return indirect_shares
+
+def mk_natural(founder_natural_df):
+    narutal_df = pd.DataFrame()
+    narutal_df['full_name'] =  \
+     founder_natural_df['last_name'] + ' ' \
+      + founder_natural_df['first_name'] + ' ' \
+       + founder_natural_df['second_name']
+    
+    natural_df['inn'] = founder_natural_df['inn'].drop_duplicates()
+    natural_df['full_credentials'] = natural_df['inn'] + '#' + narutal_df['full_name']
+    return natural_df
+
 
 if __name__ == "__main__":
     #preprocess_default()

@@ -77,12 +77,12 @@ def build_tree(company_df, natural_df, founder_legal_df, founder_natural_df):
     # create nodes
     # ASSUMING ALL TERMINALS ARE NATURAL
     nonterminals = HoldersList(*create_nodes(company_df, 'id'))
-    terminals = HoldersList(*create_nodes(natural_df, 'inn'))
+    terminals = HoldersList(*create_nodes(natural_df, 'full_credentials'))
    
     # create edges
     all = join_holders_lists(nonterminals, terminals)
     add_edges(all, founder_legal_df, founder_label='owner_id', property_label='company_id')
-    add_edges(all, founder_natural_df, founder_label='inn', property_label='company_id')
+    add_edges(all, founder_natural_df, founder_label='full_credentials', property_label='company_id')
 
     return nonterminals, terminals
 
@@ -111,8 +111,8 @@ def total_reset(*holders_lists):
         holders_list.reset_income()
 
 
-def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=1, threshold=0.99):
-    terminator = Terminator(terminal, threshold=threshold)  
+def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=100, threshold_percent=0.99):
+    terminator = Terminator(terminal, threshold=threshold_percent * start_income)  
     indirect_shares_OF_IN = { holder_id : {} for holder_id in terminal.ids }
 
     for nonterminal_id in nonterminal.ids:
