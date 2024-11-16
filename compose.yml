@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ${PWD}/
+        target: /harbour/app/data/final
+      
+    ports:
+      - "1488:1488"

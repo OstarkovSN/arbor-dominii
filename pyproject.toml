@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "arbor-dominii"
+version = "0.1.0"
+description = "tool for making possession trees"
+authors = ["\"OstarkovSN\""]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.10.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
