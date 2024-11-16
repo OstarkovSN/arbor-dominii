@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Sequence
+import pandas as pd
 
 from app.common.config import Configuration
 
@@ -68,6 +69,7 @@ class QMCloser(Preprocessor):
                         break
             processed_lines.append('\t'.join(values))
 
+
         return '\n'.join(processed_lines)
 
 def process_file(file_path: str, output_path: str, preprocessors: Sequence[Preprocessor]):
@@ -108,5 +110,73 @@ def preprocess():
     preprocessors = CONFIG['preprocessing']
     preprocess_folder(folder_path, output_folder_path, preprocessors)
 
+def get_dfs(folder_path='data/processed'):
+
+    df_company = pd.read_table(
+        'app\\data\\processed\\company.tsv',
+        header=0,
+        dtype={
+            'id': 'Int64',
+            'ogrn': 'string',
+            'inn': 'string',
+            'full_name': 'string'
+        },
+        na_values=['', ' ', 'NA', 'nan']
+    )
+
+    df_founder_natural = pd.read_table(
+        'app\\data\\processed\\founder_natural.tsv',
+        header=0,
+        dtype={
+            'id': 'Int64',
+            'company_id': 'Int64', # id компании которой владеют
+            'inn': 'string',
+            'last_name': 'string',
+            'first_name': 'string',
+            'second_name': 'string',
+            'share': 'float',
+            'share_percent': 'float'
+        },
+        na_values=['', ' ', 'NA', 'nan']
+    )
+    
+
+    df_founder_legal = pd.read_table(
+        'app\\data\\processed\\founder_legal.tsv',
+        header=0,
+        dtype={
+            'id': 'Int64',
+            'company_id': 'Int64', # id компании которой владеют
+            'ogrn': 'string',
+            'inn': 'string',
+            'full_name': 'string',
+            'share': 'float',
+            'share_percent': 'float'
+        },
+        na_values=['', ' ', 'NA', 'nan']
+    )
+
+    if df_company['ogrn'].duplicated().any():
+        raise ValueError("Столбец 'ogrn' в df_company содержит дубликаты.")
+
+    # * Добавляем колонку owner_id
+    df_founder_legal = df_founder_legal.merge( 
+        df_company[['ogrn', 'id']].rename(columns={'id': 'owner_id'}),
+        on='ogrn',
+        how='left'
+    )
+
+    return df_company, df_founder_legal, df_founder_natural
+
+
+
+
 if __name__ == '__main__':
+
     preprocess()
+
+    df_company, df_founder_legal, df_founder_natural = get_dfs()
+
+    for df in (df_company, df_founder_legal, df_founder_natural):
+        print(df.head().to_string())
+
