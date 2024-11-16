@@ -5,9 +5,13 @@ Tool for making possession trees
 
 ### Docker compose (recommended)
 
-```docker compose up```
+```shell
+docker compose up
+```
 
 ### Docker
 
-```docker build . -t ad
-docker run --name ad --mount type=bind,src="$(pwd)",target=/harbour/environment ad```
+```shell
+docker build . -t ad
+docker run --name ad --mount type=bind,src="$(pwd)",target=/harbour/environment ad
+```
