@@ -12,14 +12,6 @@ RUN poetry config virtualenvs.create false && poetry install --no-interaction --
 
 COPY /app /harbour/app
 
-RUN mkdir /harbour/app/data && mkdir /harbour/app/data/raw
-
-COPY company.tsv /harbour/app/data/raw/company.tsv
-
-COPY founder_legal.tsv /harbour/app/data/raw/founder_legal.tsv
-
-COPY founder_natural.tsv /harbour/app/data/raw/founder_natural.tsv
-
 COPY main.py /harbour/
 
 EXPOSE 1488
