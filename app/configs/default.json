@@ -1,0 +1,13 @@
+{
+    "input_folder": "/environment",
+    "processed_folder": "/app/data/processed",
+    "final_folder": "/environment",
+    "final_filename": "results.tsv",
+    "company_filename": "company.tsv",
+    "founder_natural_filename": "founder_natural.tsv",
+    "founder_legal_filename": "founder_legal.tsv",
+    "preprocessing": [
+        "CompanyNamesMerger",
+        "QMCloser"
+    ]
+}

@@ -2,6 +2,10 @@ import os
 import re
 from typing import Sequence
 
+from app.common.config import Configuration
+
+CONFIG = Configuration('config.json')
+
 FILES = ['company.tsv', 'founder_legal.tsv', 'founder_natural.tsv']
 class Preprocessor:
     '''
@@ -94,15 +98,15 @@ def preprocess_folder(folder_path: str, output_folder_path: str, preprocessors: 
         output_path = os.path.join(output_folder_path, filename)
         process_file(file_path, output_path, preprocessors)
 
-def preprocess_default():
+def preprocess():
     """
     Processes files in the "data" folder using the CompanyNamesMerger preprocessor
     and writes the results to the "processed_data" folder.
     """
-    folder_path = ''
-    output_folder_path = 'app/data/processed'
-    preprocessors = [CompanyNamesMerger(), QMCloser()]
+    folder_path = CONFIG['input_folder']
+    output_folder_path = CONFIG['processed_folder']
+    preprocessors = CONFIG['preprocessing']
     preprocess_folder(folder_path, output_folder_path, preprocessors)
 
 if __name__ == '__main__':
-    preprocess_default()
+    preprocess()
