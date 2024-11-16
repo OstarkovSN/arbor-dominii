@@ -1,6 +1,7 @@
 import os
 from typing import Sequence
 
+FILES = ['company.tsv', 'founder_legal.tsv', 'founder_natural.tsv']
 class Preprocessor:
     '''
     Абстрактный класс для предобработки текста.'''
@@ -82,7 +83,7 @@ def preprocess_folder(folder_path: str, output_folder_path: str, preprocessors: 
     Обрабатывает файлы, лежащие в директории data, и записывает результаты в processed_data.
     """
 
-    for filename in os.listdir(folder_path):
+    for filename in FILES:
         file_path = os.path.join(folder_path, filename)
         output_path = os.path.join(output_folder_path, filename)
         process_file(file_path, output_path, preprocessors)
@@ -92,7 +93,7 @@ def preprocess_default():
     Processes files in the "data" folder using the CompanyNamesMerger preprocessor
     and writes the results to the "processed_data" folder.
     """
-    folder_path = 'app/data/raw'
+    folder_path = 'environment/'
     output_folder_path = 'app/data/processed'
     preprocessors = [CompanyNamesMerger(), QMCloser()]
     preprocess_folder(folder_path, output_folder_path, preprocessors)
