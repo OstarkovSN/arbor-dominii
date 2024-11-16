@@ -32,6 +32,33 @@ class CompanyNamesMerger(Preprocessor):
 
         return '\n'.join(processed_lines)  # Возвращаем объединенные строки вместо списка строк
 
+
+class QMCloser(Preprocessor):
+    """
+    Закрывает незакрытые кавычки в строках.
+    """
+    def preprocess(self, text: str) -> str:
+        """
+        Processes the input text, ensuring all quotes are closed.
+
+        This method iterates over each line of the input text, checking if the line contains an unclosed quote.
+        If a line has an odd number of quotes, it appends a closing quote to the end of the line.
+        The processed lines are then joined and returned as a single string.
+
+        :param text: The input string to process.
+        :return: A string with all quotes properly closed.
+        """
+        lines = text.splitlines()
+        processed_lines = []
+
+        for line in lines:
+            open_quotes = line.count('"') % 2 != 0  # Проверяем, есть ли незакрытая кавычка
+            if open_quotes:
+                line += '"'  # Закрываем кавычку в конце строки
+            processed_lines.append(line)
+
+        return '\n'.join(processed_lines)
+
 def process_file(file_path: str, output_path: str, preprocessors: Sequence[Preprocessor]):
     """
     Запускает цепочку предпроцессоров над входным файлом и записывает результат в выходной файл.
@@ -67,7 +94,7 @@ def preprocess_default():
     """
     folder_path = 'app/data/raw'
     output_folder_path = 'app/data/processed'
-    preprocessors = [CompanyNamesMerger()]
+    preprocessors = [CompanyNamesMerger(), QMCloser()]
     preprocess_folder(folder_path, output_folder_path, preprocessors)
 
 if __name__ == '__main__':
