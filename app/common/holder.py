@@ -53,8 +53,9 @@ def create_nodes(df, label):
     holders = []
     ids = []
 
-    for i, row in df.iterrows():
-        new_id = row[label]
+    label_index = df.columns.get_loc(label)
+    for row in df.itertuples():
+        new_id = row[label_index]
         new_holder = Holder(
             id=new_id,
             holders=[] # will fill in on next step!
@@ -66,9 +67,11 @@ def create_nodes(df, label):
 
 
 def add_edges(holders, founders_df, founder_label, property_label, share_label='share_percent'):
-    for i, row in founders_df.iterrows():
-        founder_id = row[founder_label]
-        property_id = row[property_label]
+    founder_index = founders_df.columns.get_loc(founder_label)
+    property_index = founders_df.columns.get_loc(property_label)
+    for row in founders_df.itertuples():
+        founder_id = row[founder_index]
+        property_id = row[property_index]
         share = row[share_label]
         holders.add_relation(founder_id, property_id, share)
 
@@ -76,8 +79,11 @@ def add_edges(holders, founders_df, founder_label, property_label, share_label='
 def build_tree(company_df, natural_df, founder_legal_df, founder_natural_df):
     # create nodes
     # ASSUMING ALL TERMINALS ARE NATURAL
+    print('Haha')
     nonterminals = HoldersList(*create_nodes(company_df, 'id'))
+    print('Hehe')
     terminals = HoldersList(*create_nodes(natural_df, 'full_credentials'))
+    print('Hihi')
    
     # create edges
     all = join_holders_lists(nonterminals, terminals)
