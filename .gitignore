@@ -163,4 +163,6 @@ cython_debug/
 
 .vscode/
 *.ignore
+
 /app/data
+
