@@ -1,7 +1,13 @@
 import os
+import re
 from typing import Sequence
 import pandas as pd
 
+from app.common.config import Configuration
+
+CONFIG = Configuration('config.json')
+
+FILES = ['company.tsv', 'founder_legal.tsv', 'founder_natural.tsv']
 class Preprocessor:
     '''
     Абстрактный класс для предобработки текста.'''
@@ -61,7 +67,8 @@ class QMCloser(Preprocessor):
                     except ValueError:
                         values[i] += '"'  # Закрываем кавычку
                         break
-            processed_lines.append(line)
+            processed_lines.append('\t'.join(values))
+
 
         return '\n'.join(processed_lines)
 
@@ -88,19 +95,19 @@ def preprocess_folder(folder_path: str, output_folder_path: str, preprocessors: 
     Обрабатывает файлы, лежащие в директории data, и записывает результаты в processed_data.
     """
 
-    for filename in os.listdir(folder_path):
+    for filename in FILES:
         file_path = os.path.join(folder_path, filename)
         output_path = os.path.join(output_folder_path, filename)
         process_file(file_path, output_path, preprocessors)
 
-def preprocess_default():
+def preprocess():
     """
     Processes files in the "data" folder using the CompanyNamesMerger preprocessor
     and writes the results to the "processed_data" folder.
     """
-    folder_path = 'app/data/raw'
-    output_folder_path = 'app/data/processed'
-    preprocessors = [CompanyNamesMerger(), QMCloser()]
+    folder_path = CONFIG['input_folder']
+    output_folder_path = CONFIG['processed_folder']
+    preprocessors = CONFIG['preprocessing']
     preprocess_folder(folder_path, output_folder_path, preprocessors)
 
 def get_dfs(folder_path='data/processed'):
@@ -165,9 +172,11 @@ def get_dfs(folder_path='data/processed'):
 
 
 if __name__ == '__main__':
-    preprocess_default()
+
+    preprocess()
 
     df_company, df_founder_legal, df_founder_natural = get_dfs()
 
     for df in (df_company, df_founder_legal, df_founder_natural):
         print(df.head().to_string())
+
