@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Sequence
 
 FILES = ['company.tsv', 'founder_legal.tsv', 'founder_natural.tsv']
@@ -53,10 +54,15 @@ class QMCloser(Preprocessor):
         processed_lines = []
 
         for line in lines:
-            open_quotes = line.count('"') % 2 != 0  # Проверяем, есть ли незакрытая кавычка
-            if open_quotes:
-                line += '"'  # Закрываем кавычку в конце строки
-            processed_lines.append(line)
+            values = line.split('\t')
+            if line.count('"') % 2 != 0:  # Проверяем, есть ли незакрытая кавычка в третьем значении
+                for i, value in enumerate(values):
+                    try:
+                        float(value)
+                    except ValueError:
+                        values[i] += '"'  # Закрываем кавычку
+                        break
+            processed_lines.append('\t'.join(values))
 
         return '\n'.join(processed_lines)
 
@@ -93,7 +99,7 @@ def preprocess_default():
     Processes files in the "data" folder using the CompanyNamesMerger preprocessor
     and writes the results to the "processed_data" folder.
     """
-    folder_path = 'environment/'
+    folder_path = ''
     output_folder_path = 'app/data/processed'
     preprocessors = [CompanyNamesMerger(), QMCloser()]
     preprocess_folder(folder_path, output_folder_path, preprocessors)
