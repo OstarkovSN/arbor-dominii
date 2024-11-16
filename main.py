@@ -10,7 +10,10 @@ import pandas as pd
 
 from app.common.config import Configuration
 
-CONFIG = Configuration('config.json')
+try:
+    CONFIG = Configuration('environment/config.json')
+except FileNotFoundError:
+    CONFIG = Configuration('app/configs/local.json')
 
 def preprocess():
     """
@@ -18,15 +21,15 @@ def preprocess():
     and writes the results to the "processed_data" folder.
     """
 
-    preprocess_folder(CONFIG['input_folder'],
-                      CONFIG['processed_folder'],
+    preprocess_folder(CONFIG['raw/'],
+                      CONFIG['processed/'],
                       CONFIG['preprocessing'])
     
 
 def get_dfs():
 
     df_company = pd.read_table(
-        CONFIG['raw/company'],
+        CONFIG['processed/company'],
         header=0,
         dtype={
             'id': 'Int64',
@@ -38,7 +41,7 @@ def get_dfs():
     )
 
     df_founder_natural = pd.read_table(
-        CONFIG['raw/founder_natural'],
+        CONFIG['processed/founder_natural'],
         header=0,
         dtype={
             'id': 'Int64',
@@ -55,7 +58,7 @@ def get_dfs():
     
 
     df_founder_legal = pd.read_table(
-        CONFIG['raw/founder_legal'],
+        CONFIG['processed/founder_legal'],
         header=0,
         dtype={
             'id': 'Int64',
@@ -119,7 +122,7 @@ def kopeika(company_df,founder_legal_df,founder_natural_df):
     return indirect_shares
 
 if __name__ == "__main__":
-    #preprocess_default()
+    preprocess()
 
     company_df, founder_legal_df, founder_natural_df = get_dfs()
 
@@ -129,6 +132,6 @@ if __name__ == "__main__":
         print(f"Отсутствующие company_id в company.tsv: {missing_company_ids}")
 
 
-    indirect_shares = kopeika(company_df=company_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
+    #indirect_shares = kopeika(company_df=company_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
     
-    postprocess_default(indirect_shares, comps) #FIXME
+    #postprocess_default(indirect_shares, comps) #FIXME

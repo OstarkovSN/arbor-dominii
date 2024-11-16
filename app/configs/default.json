@@ -8,7 +8,7 @@
     "founder_legal_filename": "founder_legal.tsv",
     "preprocessing": [
         "CompanyNamesMerger",
-        "QMCloser"
+        "QMRemover"
     ],
     "_filename": ""
 }

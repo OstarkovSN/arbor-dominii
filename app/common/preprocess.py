@@ -36,7 +36,7 @@ class CompanyNamesMerger(Preprocessor):
         return '\n'.join(processed_lines)  # Возвращаем объединенные строки вместо списка строк
 
 
-class QMCloser(Preprocessor):
+class QMRemover(Preprocessor):
     """
     Закрывает незакрытые кавычки в строках.
     """
@@ -56,14 +56,11 @@ class QMCloser(Preprocessor):
 
         for line in lines:
             values = line.split('\t')
-            if line.count('"') % 2 != 0:  # Проверяем, есть ли незакрытая кавычка в третьем значении
-                for i, value in enumerate(values):
-                    try:
-                        float(value)
-                    except ValueError:
-                        values[i] += '"'  # Закрываем кавычку
-                        break
-            processed_lines.append('\t'.join(values))
+            for i, value in enumerate(values):
+                if value.count('"') % 2 != 0:
+                    values[i] += '"'
+            line = '\t'.join(values)
+            processed_lines.append(line)
 
 
         return '\n'.join(processed_lines)

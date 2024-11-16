@@ -4,7 +4,7 @@ import json
 import os
 import re
 import warnings
-from app.common.preprocess import CompanyNamesMerger, QMCloser
+from app.common.preprocess import CompanyNamesMerger, QMRemover
 
 PREMADE_CONFIGS = {}
 
@@ -15,8 +15,8 @@ for filename in os.listdir('app/configs'):
 
 MAPPINGS = {
     'preprocessing': {
-        'CompanyNamesMerger': CompanyNamesMerger,
-        'QMCloser': QMCloser
+        'CompanyNamesMerger': CompanyNamesMerger(),
+        'QMRemover': QMRemover()
     }
 }
 
@@ -78,6 +78,9 @@ class Configuration:
             folder, filename  = key.split('/')
             real_folder = self._config[folder + '_folder']
             real_filename = self._config[filename + '_filename']
-            return '.' + os.path.join( real_folder, real_filename)
+            res_path = os.path.join( real_folder, real_filename)
+            if not res_path.startswith('/'):
+                res_path = '/' + res_path
+            return '.'+res_path
         return self._config[key]
     
