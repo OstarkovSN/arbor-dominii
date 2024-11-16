@@ -2,11 +2,9 @@ class Holder:
     def __init__(
             self,
             id,
-            shares,
             holders,
     ):
         self.id = id
-        self.shares = shares
         self.holders = holders
         self.income = 0
     
@@ -25,8 +23,14 @@ class HoldersList:
             holder_ids,
     ):
         self.holder = { holder_ids[i] : holders[i] for i in range(len(holders)) }
-        self.ids = holder_ids
-    
+
+
+    def add_relation(self, founder_id, property_id, share):
+        founder = self.holder[founder_id]
+        property = self.holder[property_id]
+        property.holders.append((founder, share))
+
+
     def __getitem__(self, holder_id):
         return self.holder[holder_id]
     
@@ -39,6 +43,49 @@ class HoldersList:
     def reset_income(self):
         for holder_id in self.holder:
             self.holder[holder_id] = 0
+
+def join_holders_lists(holders_list1, holders_list2):
+    joined = HoldersList([], [])
+    joined.holder = holders_list1.holder | holders_list2.holder
+
+def create_nodes(df, label):
+    # ASSUMING NO DUPLICATES
+    holders = []
+    ids = []
+
+    for row in df.iterrows():
+        new_id = row[label]
+        new_holder = Holder(
+            id=new_id,
+            holders=[] # will fill in on next step!
+        )
+        holders.append(new_holder)
+        ids.append(new_id)
+
+    return holders, ids
+
+
+def add_edges(holders, founders_df, founder_label, property_label, share_label='share_percent'):
+    for row in founders_df.iterrows():
+        founder_id = row[founder_label]
+        property_id = row[property_label]
+        share = row[share_label]
+        holders.add_relation(founder_id, property_id, share)
+
+ 
+def build_tree(company_df, natural_df, founder_legal_df, founder_natural_df):
+    # create nodes
+    # ASSUMING ALL TERMINALS ARE NATURAL
+    nonterminals = HoldersList(*create_nodes(company_df, 'id'))
+    terminals = HoldersList(*create_nodes(natural_df, 'inn'))
+   
+    # create edges
+    all = join_holders_lists(nonterminals, terminals)
+    add_edges(all, founder_legal_df, founder_label='owner_id', property_label='company_id')
+    add_edges(all, founder_natural_df, founder_label='inn', property_label='company_id')
+
+    return nonterminals, terminals
+
 
 class Terminator:
     def __init__(self, terminal, threshold, steps_until_checkpoint=1000, ):
@@ -74,3 +121,6 @@ def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=1, 
         for terminal_id in terminal.ids:
             indirect_shares_OF_IN[terminal_id][nonterminal_id] = terminal[terminal_id].sum
     return indirect_shares_OF_IN
+
+
+
