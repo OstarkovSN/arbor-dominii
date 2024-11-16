@@ -27,6 +27,9 @@ class HoldersList:
         self.holder = { holder_ids[i] : holders[i] for i in range(len(holders)) }
         self.ids = holder_ids
     
+    def __getitem__(self, holder_id):
+        return self.holder[holder_id]
+    
     def total_income(self):
         total = 0
         for holder_id in self.holder:
