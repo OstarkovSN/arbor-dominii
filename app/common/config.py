@@ -2,6 +2,8 @@
 
 import json
 import os
+import re
+import warnings
 from app.common.preprocess import CompanyNamesMerger, QMCloser
 
 PREMADE_CONFIGS = {}
@@ -35,11 +37,18 @@ class Configuration:
             with open(config_path, encoding='utf-8') as f:
                 self._config = json.load(f)
 
+        for key in self._config.keys():
+            if key.startswith('_'):
+                warnings.warn('Trying to set a protected key: ' + key)
+        
         # Get the name of the base configuration
         default_config_name = self._config.get('config', 'default')
 
         # Get the base configuration
         base_config = PREMADE_CONFIGS[default_config_name]
+        for key in base_config.keys():
+            if key.startswith('_'):
+                warnings.warn('Trying to set a protected key: ' + key)
 
         # Update the base configuration with the default values from even more default configuration if they are not present
         # This is to ensure that all the default values are present in the base configuration
@@ -65,4 +74,10 @@ class Configuration:
             
 
     def __getitem__(self, key):
+        if re.search('/', key):
+            folder, filename  = key.split('/')
+            real_folder = self._config[folder + '_folder']
+            real_filename = self._config[filename + '_filename']
+            return '.' + os.path.join( real_folder, real_filename)
         return self._config[key]
+    

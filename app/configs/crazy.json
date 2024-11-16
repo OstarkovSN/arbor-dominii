@@ -1,0 +1,9 @@
+{
+    "raw_folder": "/e/rrrrrrrrrrr",
+    "processed_folder": "/12/ppppppppp",
+    "final_folder": "/f",
+    "results_filename": "not_a_results.tsv",
+    "company_filename": "definitly_company.tsv",
+    "founder_natural_filename": "babababab_natural.tsv",
+    "founder_legal_filename": "bebebe_legal.tsv"
+}

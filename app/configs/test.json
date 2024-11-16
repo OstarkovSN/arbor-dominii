@@ -1,0 +1,5 @@
+{
+    "raw_folder": "/app/test_data",
+    "processed_folder": "/app/test_data/processed",
+    "final_folder": "/app/test_data/final"
+}

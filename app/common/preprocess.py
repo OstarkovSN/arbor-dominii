@@ -3,10 +3,6 @@ import re
 from typing import Sequence
 import pandas as pd
 
-from app.common.config import Configuration
-
-CONFIG = Configuration('config.json')
-
 FILES = ['company.tsv', 'founder_legal.tsv', 'founder_natural.tsv']
 class Preprocessor:
     '''
@@ -99,84 +95,4 @@ def preprocess_folder(folder_path: str, output_folder_path: str, preprocessors: 
         file_path = os.path.join(folder_path, filename)
         output_path = os.path.join(output_folder_path, filename)
         process_file(file_path, output_path, preprocessors)
-
-def preprocess():
-    """
-    Processes files in the "data" folder using the CompanyNamesMerger preprocessor
-    and writes the results to the "processed_data" folder.
-    """
-    folder_path = CONFIG['input_folder']
-    output_folder_path = CONFIG['processed_folder']
-    preprocessors = CONFIG['preprocessing']
-    preprocess_folder(folder_path, output_folder_path, preprocessors)
-
-def get_dfs(folder_path='data/processed'):
-
-    df_company = pd.read_table(
-        'app\\data\\processed\\company.tsv',
-        header=0,
-        dtype={
-            'id': 'Int64',
-            'ogrn': 'string',
-            'inn': 'string',
-            'full_name': 'string'
-        },
-        na_values=['', ' ', 'NA', 'nan']
-    )
-
-    df_founder_natural = pd.read_table(
-        'app\\data\\processed\\founder_natural.tsv',
-        header=0,
-        dtype={
-            'id': 'Int64',
-            'company_id': 'Int64', # id компании которой владеют
-            'inn': 'string',
-            'last_name': 'string',
-            'first_name': 'string',
-            'second_name': 'string',
-            'share': 'float',
-            'share_percent': 'float'
-        },
-        na_values=['', ' ', 'NA', 'nan']
-    )
-    
-
-    df_founder_legal = pd.read_table(
-        'app\\data\\processed\\founder_legal.tsv',
-        header=0,
-        dtype={
-            'id': 'Int64',
-            'company_id': 'Int64', # id компании которой владеют
-            'ogrn': 'string',
-            'inn': 'string',
-            'full_name': 'string',
-            'share': 'float',
-            'share_percent': 'float'
-        },
-        na_values=['', ' ', 'NA', 'nan']
-    )
-
-    if df_company['ogrn'].duplicated().any():
-        raise ValueError("Столбец 'ogrn' в df_company содержит дубликаты.")
-
-    # * Добавляем колонку owner_id
-    df_founder_legal = df_founder_legal.merge( 
-        df_company[['ogrn', 'id']].rename(columns={'id': 'owner_id'}),
-        on='ogrn',
-        how='left'
-    )
-
-    return df_company, df_founder_legal, df_founder_natural
-
-
-
-
-if __name__ == '__main__':
-
-    preprocess()
-
-    df_company, df_founder_legal, df_founder_natural = get_dfs()
-
-    for df in (df_company, df_founder_legal, df_founder_natural):
-        print(df.head().to_string())
 
