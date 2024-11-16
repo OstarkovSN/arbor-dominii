@@ -99,7 +99,7 @@ def preprocess_default():
     Processes files in the "data" folder using the CompanyNamesMerger preprocessor
     and writes the results to the "processed_data" folder.
     """
-    folder_path = 'environment/'
+    folder_path = ''
     output_folder_path = 'app/data/processed'
     preprocessors = [CompanyNamesMerger(), QMCloser()]
     preprocess_folder(folder_path, output_folder_path, preprocessors)
