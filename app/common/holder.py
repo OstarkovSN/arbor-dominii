@@ -53,7 +53,7 @@ def create_nodes(df, label):
     holders = []
     ids = []
 
-    for row in df.iterrows():
+    for i, row in df.iterrows():
         new_id = row[label]
         new_holder = Holder(
             id=new_id,
@@ -66,7 +66,7 @@ def create_nodes(df, label):
 
 
 def add_edges(holders, founders_df, founder_label, property_label, share_label='share_percent'):
-    for row in founders_df.iterrows():
+    for i, row in founders_df.iterrows():
         founder_id = row[founder_label]
         property_id = row[property_label]
         share = row[share_label]
@@ -88,15 +88,20 @@ def build_tree(company_df, natural_df, founder_legal_df, founder_natural_df):
 
 
 class Terminator:
-    def __init__(self, terminal, threshold, steps_until_checkpoint=1000, ):
+    def __init__(self, terminal, threshold, steps_until_checkpoint=1000, total_steps=1e7):
         self.terminal = terminal
         self.threshold = threshold
         self.steps_until_checkpoint = steps_until_checkpoint 
+        self.total_steps = total_steps
 
         self.steps_until_checkpoint_base_value = steps_until_checkpoint 
         self.terminated = False
     
     def check(self):
+        if self.total_steps == 0:
+            return True
+        self.total_steps -= 1
+        
         self.steps_until_checkpoint -= 1
         if self.steps_until_checkpoint == 0:
             self.terminated = self.check_terminating_condition()

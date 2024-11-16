@@ -99,22 +99,25 @@ def kopeika(company_df, natural_df, founder_legal_df, founder_natural_df):
         founder_natural_df=founder_natural_df,
     )
 
+    print('Start2')
     indirect_shares = iteratively_estimate_indirect_shares(
         nonterminal=nonterminal,
         terminal=terminal,
     )
+    print('Done')
     
     return indirect_shares
 
 def mk_natural(founder_natural_df):
-    narutal_df = pd.DataFrame()
-    narutal_df['full_name'] =  \
+    natural_df = pd.DataFrame()
+    natural_df['full_name'] =  \
      founder_natural_df['last_name'] + ' ' \
       + founder_natural_df['first_name'] + ' ' \
        + founder_natural_df['second_name']
     
-    natural_df['inn'] = founder_natural_df['inn'].drop_duplicates()
-    natural_df['full_credentials'] = natural_df['inn'] + '#' + narutal_df['full_name']
+    natural_df['inn'] = founder_natural_df['inn']
+    natural_df = natural_df.drop_duplicates()
+    natural_df['full_credentials'] = natural_df['inn'].astype(str) + '#' + natural_df['full_name']
     return natural_df
 
 
@@ -129,6 +132,6 @@ if __name__ == "__main__":
         print(f"Отсутствующие company_id в company.tsv: {missing_company_ids}")
 
 
-    indirect_shares = kopeika(company_df=company_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
-    
+    indirect_shares = kopeika(company_df=company_df, natural_df=natural_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
     postprocess_default(indirect_shares, comps) #FIXME
+>>>>>>> 2b0cee6 (need owner_id)
