@@ -8,7 +8,7 @@ class Holder:
     ):
         self.id = id
         self.holders = holders
-        self.income = 0
+        self.sum = 0
     
     def receive_income(self, new_income, terminator, tol_income=0.01, max_iter=1e5):
         # append and popleft
@@ -25,7 +25,7 @@ class Holder:
             for holder, share in current.holders:
                 to_propagate = current_income * share 
                 if to_propagate > tol_income:
-                    current.income -= to_propagate
+                    current.sum -= to_propagate
                     queue.append((holder, to_propagate))
 
 class HoldersList:
