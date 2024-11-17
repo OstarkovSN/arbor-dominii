@@ -89,13 +89,22 @@ os.makedirs(CONFIG['final/'], exist_ok=True)
 with open(CONFIG['final/results'], 'w', encoding='utf-8') as f:
     f.write('test')
 from app.common.holder import HoldersList, Holder, iteratively_estimate_indirect_shares, build_tree
-from app.common.preprocess import preprocess_default
+from app.common.preprocess import preprocess_default, get_dfs
 
-def kopeika(company_df, natural_df, founder_legal_df, founder_natural_df):
+def kopeika(
+        company_df,
+        natural_df,
+        founder_legal_df,
+        founder_legal_df_nonterminal,
+        founder_legal_df_terminal,
+        founder_natural_df,
+):
     nonterminal, terminal = build_tree(
         company_df=company_df,
         natural_df=natural_df,
         founder_legal_df=founder_legal_df,
+        founder_legal_df_nonterminal=founder_legal_df_nonterminal,
+        founder_legal_df_terminal=founder_legal_df_terminal,
         founder_natural_df=founder_natural_df,
     )
 
@@ -122,9 +131,10 @@ def mk_natural(founder_natural_df):
 
 
 if __name__ == "__main__":
-    #preprocess_default()
+    preprocess_default()
 
-    company_df, founder_legal_df, founder_natural_df = get_dfs()
+    company_df, founder_legal_df, founder_legal_df_nonterminal, founder_legal_df_terminal, founder_natural_df = get_dfs()
+    natural_df = mk_natural(founder_natural_df)
 
     # Проверка наличия несоответствий
     missing_company_ids = set(founder_legal_df['company_id']) - set(company_df['id'])
@@ -132,6 +142,14 @@ if __name__ == "__main__":
         print(f"Отсутствующие company_id в company.tsv: {missing_company_ids}")
 
 
-    indirect_shares = kopeika(company_df=company_df, natural_df=natural_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
+=======
+    print('Start1')
+    indirect_shares = kopeika(
+        company_df=company_df,
+        natural_df=natural_df,
+        founder_legal_df=founder_legal_df,
+        founder_legal_df_nonterminal=founder_legal_df_nonterminal,
+        founder_legal_df_terminal=founder_legal_df_terminal,
+        founder_natural_df=founder_natural_df
+    )
     postprocess_default(indirect_shares, comps) #FIXME
->>>>>>> 2b0cee6 (need owner_id)
