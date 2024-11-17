@@ -10,11 +10,11 @@ class Holder:
         self.holders = holders
         self.sum = 0
     
-    def receive_income(self, new_income, terminator, tol_income=0.01, max_iter=1e5):
+    def receive_income(self, new_income, terminator, tol_income=0.01, max_iter=100):
         # append and popleft
         queue = deque([(self, new_income)])
         while len(queue) > 0 and max_iter > 0:
-            max_iter -= 1
+            #print(max_iter)
 
             current, current_income = queue.popleft()
             current.sum += current_income
@@ -23,6 +23,7 @@ class Holder:
                 break
 
             for holder, share in current.holders:
+                max_iter -= 1
                 to_propagate = current_income * share 
                 if to_propagate > tol_income:
                     current.sum -= to_propagate
@@ -61,9 +62,15 @@ def join_holders_lists(holders_list1, holders_list2):
     joined.holder = holders_list1.holder | holders_list2.holder
     return joined
 
-def create_nodes(df, label, forbidden_ids=None):
-    if forbidden_ids is None:
-        forbidden_ids = {}
+def create_nodes(df, label, blacklist=None, whitelist=None):
+    def allowed(x):
+        if x in blacklist:
+            return False
+        if whitelist is None:
+            return True
+        return x in whitelist
+    if blacklist is None:
+        blacklist = set()
     
     # ASSUMING NO DUPLICATES
     holders = []
@@ -72,7 +79,7 @@ def create_nodes(df, label, forbidden_ids=None):
     label_index = df.columns.get_loc(label) + 1
     for row in df.itertuples():
         new_id = row[label_index]
-        if new_id not in forbidden_ids:
+        if allowed(new_id):
             new_holder = Holder(
                 id=new_id,
                 holders=[] # will fill in on next step!
@@ -101,6 +108,7 @@ def build_tree(
         founder_legal_df_nonterminal,
         founder_legal_df_terminal,
         founder_natural_df,
+        ogrns
 ):
     # ASSUMPTIONS
     founder_legal_df = founder_legal_df.dropna()
@@ -110,30 +118,29 @@ def build_tree(
 
     # create nodes
     print('Haha')
-    nonterminals1 = HoldersList(*create_nodes(founder_legal_df_nonterminal, 'ogrn'))
-    nonterminals2 =  HoldersList(*create_nodes(company_df, 'ogrn', forbidden_ids=nonterminals1.holder))
+    nonterminals1 = HoldersList(*create_nodes(founder_legal_df_nonterminal, 'ogrn', whitelist=ogrns))
+    nonterminals2 =  HoldersList(*create_nodes(company_df, 'ogrn', blacklist=set(nonterminals1.holder), whitelist=ogrns))
     nonterminals = join_holders_lists(nonterminals1, nonterminals2)
     print('Hehe')
-    terminals1 = HoldersList(*create_nodes(natural_df, 'full_credentials'))
-    terminals2 = HoldersList(*create_nodes(founder_legal_df, 'ogrn'))
-    terminals = join_holders_lists(terminals1, terminals2)
+    humans = HoldersList(*create_nodes(natural_df, 'full_credentials'))
+    terminals2 = HoldersList(*create_nodes(founder_legal_df, 'ogrn', whitelist=ogrns))
+    terminals = join_holders_lists(humans, terminals2)
     print('Hihi')
    
     # create edges
     all = join_holders_lists(nonterminals, terminals)
     print('A')
 
-    print(nonterminals.holder['1001601570410'])
     #print(all.holder['1001601570410'])
     print('B')
     add_edges(all, founder_legal_df, founder_label='ogrn', property_label='company_ogrn')
     add_edges(all, founder_natural_df, founder_label='full_credentials', property_label='company_ogrn')
 
-    return nonterminals, terminals
+    return nonterminals, terminals, humans
 
 
 class Terminator:
-    def __init__(self, terminal, threshold, steps_until_checkpoint=10, total_steps=1e7):
+    def __init__(self, terminal, threshold, steps_until_checkpoint=10000, total_steps=1e7):
         self.terminal = terminal
         self.threshold = threshold
         self.steps_until_checkpoint = steps_until_checkpoint 
@@ -149,12 +156,13 @@ class Terminator:
         
         self.steps_until_checkpoint -= 1
         if self.steps_until_checkpoint == 0:
+            print('Another million', self.total_steps)
             self.terminated = self.check_terminating_condition()
         return self.terminated
     
     def check_terminating_condition(self):
         t = self.terminal.total_income()
-        print(t)
+        #print(t)
         return t > self.threshold
 
 
@@ -163,18 +171,22 @@ def total_reset(*holders_lists):
         holders_list.reset_income()
 
 
-def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=1, threshold_percent=0.99):
+def compress(holder_list):
+    return dict(map(lambda p: (p[1], p[0]), enumerate(holder_list.holder.keys())))
+
+def iteratively_estimate_indirect_shares(nonterminal, terminal, humans, start_income=1, threshold_percent=0.99):
     terminator = Terminator(terminal, threshold=threshold_percent * start_income)  
     indirect_shares_OF_IN = { holder_id : {} for holder_id in terminal.holder }
 
     cnt = 0
     for nonterminal_id in nonterminal.holder:
         cnt += 1
-        print('AHAHAAHA', cnt)
+        #print('AHAHAAHA', cnt)
         total_reset(nonterminal, terminal)
         nonterminal[nonterminal_id].receive_income(start_income, terminator)
-        for terminal_id in terminal.holder:
-            indirect_shares_OF_IN[terminal_id][nonterminal_id] = terminal[terminal_id].sum
+        for human_id in humans.holder:
+            if humans[human_id].sum > 0.25:
+                indirect_shares_OF_IN[human_id][nonterminal_id] = humans[human_id].sum
     return indirect_shares_OF_IN
 
 

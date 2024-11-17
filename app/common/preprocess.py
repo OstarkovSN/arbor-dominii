@@ -157,6 +157,7 @@ def get_dfs(folder_path='data/processed'):
 
     if df_company['ogrn'].duplicated().any():
         raise ValueError("Столбец 'ogrn' в df_company содержит дубликаты.")
+    
 
     df_founder_natural = df_founder_natural.merge( 
         df_company[['ogrn', 'id']].rename(columns={'id': 'company_id', 'ogrn': 'company_ogrn'}),
@@ -168,10 +169,14 @@ def get_dfs(folder_path='data/processed'):
         on='company_id',
         how='left'
     )
+    ogrns1 = set(df_founder_natural['company_ogrn'])
+    ogrns2 = set(df_founder_legal['ogrn'])
+    ogrns3 = set(df_founder_legal['company_ogrn'])
+    ogrns = ogrns1 | ogrns2 | ogrns3
+    print(len(ogrns))
     print(df_founder_legal.columns)
 
     nonterminal_ogrns = set(df_founder_legal['company_ogrn'])
-    print('1001601570410' in nonterminal_ogrns)
     print('A', len(nonterminal_ogrns))
     
     #print(df_founder_legal[df_founder_legal['company_ogrn'].isnull()])
@@ -193,7 +198,7 @@ def get_dfs(folder_path='data/processed'):
     df_founder_legal_nonterminal = df_founder_legal.iloc[nonterminal_rows]
     df_founder_legal_terminal = df_founder_legal.iloc[terminal_rows]
 
-    return df_company, df_founder_legal, df_founder_legal_nonterminal, df_founder_legal_terminal, df_founder_natural
+    return df_company, df_founder_legal, df_founder_legal_nonterminal, df_founder_legal_terminal, df_founder_natural, ogrns
 
 
 
@@ -202,6 +207,7 @@ if __name__ == '__main__':
     preprocess_default()
 
     dfs = get_dfs()
+    dfs = dfs[:-1]
 
     for df in dfs:
         print(df.head().to_string())

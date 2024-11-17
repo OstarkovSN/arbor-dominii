@@ -98,20 +98,23 @@ def kopeika(
         founder_legal_df_nonterminal,
         founder_legal_df_terminal,
         founder_natural_df,
+        ogrns,
 ):
-    nonterminal, terminal = build_tree(
+    nonterminal, terminal, humans = build_tree(
         company_df=company_df,
         natural_df=natural_df,
         founder_legal_df=founder_legal_df,
         founder_legal_df_nonterminal=founder_legal_df_nonterminal,
         founder_legal_df_terminal=founder_legal_df_terminal,
         founder_natural_df=founder_natural_df,
+        ogrns=ogrns,
     )
 
     print('Start2')
     indirect_shares = iteratively_estimate_indirect_shares(
         nonterminal=nonterminal,
         terminal=terminal,
+        humans=humans,
     )
     print('Done')
     
@@ -134,8 +137,9 @@ def mk_natural(founder_natural_df):
 if __name__ == "__main__":
     preprocess_default()
 
-    company_df, founder_legal_df, founder_legal_df_nonterminal, founder_legal_df_terminal, founder_natural_df = get_dfs()
+    company_df, founder_legal_df, founder_legal_df_nonterminal, founder_legal_df_terminal, founder_natural_df, ogrns = get_dfs()
     natural_df = mk_natural(founder_natural_df)
+    print(natural_df)
 
     # Проверка наличия несоответствий
     missing_company_ids = set(founder_legal_df['company_id']) - set(company_df['id'])
@@ -150,6 +154,7 @@ if __name__ == "__main__":
         founder_legal_df=founder_legal_df,
         founder_legal_df_nonterminal=founder_legal_df_nonterminal,
         founder_legal_df_terminal=founder_legal_df_terminal,
-        founder_natural_df=founder_natural_df
+        founder_natural_df=founder_natural_df,
+        ogrns=ogrns,
     )
     postprocess_default(indirect_shares, comps) #FIXME
