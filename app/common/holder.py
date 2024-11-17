@@ -123,8 +123,6 @@ def build_tree(
     all = join_holders_lists(nonterminals, terminals)
     print('A')
 
-    print(nonterminals.holder['1001601570410'])
-    #print(all.holder['1001601570410'])
     print('B')
     add_edges(all, founder_legal_df, founder_label='ogrn', property_label='company_ogrn')
     add_edges(all, founder_natural_df, founder_label='full_credentials', property_label='company_ogrn')
