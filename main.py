@@ -1,74 +1,107 @@
+# main.py
+
 import os
-
+from app.common.preprocess import preprocess_folder, get_dfs, CompanyNamesMerger, QMRemover
+from app.common.impute import impute_data_fast
+from app.common.matrix import (
+    build_entity_index, 
+    build_ownership_relations, 
+    build_ownership_matrix, 
+    compute_ultimate_ownership, 
+    get_natural_to_company_ownership, 
+    get_company_to_natural_ownership
+)
 import pandas as pd
-from app.common.holder import HoldersList, Holder, iteratively_estimate_indirect_shares, build_tree
-from app.common.preprocess import preprocess_folder, get_dfs, mk_natural
-from app.common.postprocess import postprocess_default
-import pandas as pd
 
-from app.common.config import Configuration
-def kopeika(
-        company_df,
-        natural_df,
-        founder_legal_df,
-        founder_legal_df_nonterminal,
-        founder_legal_df_terminal,
-        founder_natural_df,
-):
-    nonterminal, terminal = build_tree(
-        company_df=company_df,
-        natural_df=natural_df,
-        founder_legal_df=founder_legal_df,
-        founder_legal_df_nonterminal=founder_legal_df_nonterminal,
-        founder_legal_df_terminal=founder_legal_df_terminal,
-        founder_natural_df=founder_natural_df,
+def main():
+    # Определяем пути к данным
+    raw_data_folder = 'app/data/raw'
+    processed_data_folder = 'app/data/processed'
+    
+    # Определяем последовательность предобработчиков
+    preprocessors = [CompanyNamesMerger(), QMRemover()]
+    
+    # Предобрабатываем данные
+    preprocess_folder(raw_data_folder, processed_data_folder, preprocessors)
+    
+    # Пути к предобработанным файлам
+    company_path = os.path.join(processed_data_folder, 'company.tsv')
+    founder_natural_path = os.path.join(processed_data_folder, 'founder_natural.tsv')
+    founder_legal_path = os.path.join(processed_data_folder, 'founder_legal.tsv')
+    
+    # Получаем DataFrame'ы
+    df_company, df_founder_legal, df_founder_legal_nonterminal, df_founder_legal_terminal, df_founder_natural = get_dfs(
+        company_path, founder_natural_path, founder_legal_path
     )
-
-    print('Start2')
-    indirect_shares = iteratively_estimate_indirect_shares(
-        nonterminal=nonterminal,
-        terminal=terminal,
+    
+    # Выполняем импутацию данных (если необходимо)
+    df_founder_natural = impute_data_fast(df_founder_natural)
+    
+    # Строим индекс сущностей
+    entity_to_idx, idx_to_entity, natural_person_indices = build_entity_index(
+        df_company, df_founder_natural, df_founder_legal
     )
-    print('Done')
     
-    return indirect_shares
-
-if __name__ == "__main__":
-    with open('docker.flag', 'r') as f:
-        is_docker = f.read().strip() == 'True'
-    if is_docker:
-        CONFIG = Configuration('environment/config_docker.json') #if we are in docker
-    else:
-        try:
-            CONFIG = Configuration('config.json') #if we are in local
-        except FileNotFoundError:
-            CONFIG = Configuration('app/configs/local.json') #if we are in local, try to use local config
-        
-    os.makedirs(CONFIG['raw/'], exist_ok=True)
-    os.makedirs(CONFIG['processed/'], exist_ok=True)
-    os.makedirs(CONFIG['final/'], exist_ok=True)
+    # Строим отношения владения
+    ownership_relations = build_ownership_relations(
+        df_founder_natural, df_founder_legal, entity_to_idx
+    )
     
-    preprocess_folder(CONFIG['raw/'],
-                    CONFIG['processed/'],
-                    CONFIG['preprocessing'])
-
-    company_df, founder_legal_df, founder_legal_df_nonterminal, founder_legal_df_terminal, founder_natural_df = get_dfs(CONFIG['processed/company'], CONFIG['processed/founder_natural'], CONFIG['processed/founder_legal'])
-
-    natural_df = CONFIG['impute'](founder_natural_df)
+    # Строим матрицу владения
+    num_entities = len(entity_to_idx)
+    M = build_ownership_matrix(num_entities, ownership_relations)
     
-    natural_df = mk_natural(founder_natural_df)
+    # Вычисляем итоговое владение
+    ultimate_ownership = compute_ultimate_ownership(M, natural_person_indices)
     
-    # Проверка наличия несоответствий
-    missing_company_ids = set(founder_legal_df['company_id']) - set(company_df['id'])
-    if missing_company_ids:
-        print(f"Отсутствующие company_id в company.tsv: {missing_company_ids}")
-
-
-    indirect_shares = kopeika(company_df=company_df,
-                              founder_legal_df=founder_legal_df,
-                              founder_natural_df=founder_natural_df,
-                              natural_df=natural_df,
-                              founder_legal_df_nonterminal=founder_legal_df_nonterminal,
-                              founder_legal_df_terminal=founder_legal_df_terminal)
+    # Извлекаем владение от физических лиц к компаниям
+    natural_to_company = get_natural_to_company_ownership(
+        ultimate_ownership, natural_person_indices, idx_to_entity
+    )
     
-    postprocess_default(indirect_shares, df_companies=company_df, final_filepath=CONFIG['final/results']) #FIXME
+    # Извлекаем владение компаниями от физических лиц
+    company_to_natural = get_company_to_natural_ownership(
+        ultimate_ownership, natural_person_indices, idx_to_entity
+    )
+    
+    # Преобразуем результаты в удобный формат для вывода
+    # Для каждого физического лица: список компаний с процентами владения
+    natural_ownership_df = []
+    for person_idx, companies in natural_to_company.items():
+        person_id = idx_to_entity[person_idx]
+        inn = person_id.replace("natural_", "")
+        for company_idx, percent in companies.items():
+            company_id = idx_to_entity[company_idx].replace("company_", "")
+            natural_ownership_df.append({
+                'natural_inn': inn, 
+                'company_ogrn': company_id, 
+                'share_percent': percent
+            })
+    
+    df_natural_ownership = pd.DataFrame(natural_ownership_df)
+    
+    # Для каждой компании: список физических лиц с процентами владения
+    company_ownership_df = []
+    for company_idx, persons in company_to_natural.items():
+        company_id = idx_to_entity[company_idx].replace("company_", "")
+        for person_idx, percent in persons.items():
+            inn = idx_to_entity[person_idx].replace("natural_", "")
+            company_ownership_df.append({
+                'company_ogrn': company_id, 
+                'natural_inn': inn, 
+                'share_percent': percent
+            })
+    
+    df_company_ownership = pd.DataFrame(company_ownership_df)
+    
+    # Создаём папку для результатов, если её нет
+    os.makedirs('app/data/results', exist_ok=True)
+    
+    # Сохраняем результаты в CSV файлы
+    df_natural_ownership.to_csv('app/data/results/natural_to_company_ownership.csv', index=False)
+    df_company_ownership.to_csv('app/data/results/company_to_natural_ownership.csv', index=False)
+    
+    print("Вычисление владения завершено и результаты сохранены.")
+
+if __name__ == '__main__':
+    main()
