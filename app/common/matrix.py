@@ -107,7 +107,7 @@ def build_ownership_matrix(num_entities, ownership_relations):
             M[owner, company] += share
     return M.tocsr()
 
-def compute_ultimate_ownership(M, natural_person_indices, max_iterations=100, tol=1e-6):
+def compute_ultimate_ownership_legacy(M, natural_person_indices, max_iterations=100, tol=1e-6):
     """
     Вычисляет итоговое владение как сумму M + M^2 + M^3 + ...
 
@@ -140,6 +140,44 @@ def compute_ultimate_ownership(M, natural_person_indices, max_iterations=100, to
             break
         iteration += 1
     return ultimate_ownership
+
+
+def compute_ultimate_ownership(M, natural_person_indices, max_iterations=100, tol=1e-6):
+    """
+    Вычисляет итоговое владение как (I + M + M^2 + M^3 + ...) * initial_vector
+
+    Args:
+        M: матрица владения (разреженная csr матрица)
+        natural_person_indices: множество индексов, соответствующих физическим лицам
+        max_iterations: максимальное число итераций
+        tol: порог сходимости
+    Returns:
+        ultimate_ownership: csr матрица с итоговыми процентами владения от физических лиц к компаниям
+    """
+    from scipy.sparse import identity
+
+    # Формируем матрицу (I - M), где I - единичная матрица
+    I = identity(M.shape[0], format='csr', dtype=np.float64)
+    A = I - M
+
+    # Поскольку мы не можем инвертировать A, используем метод итераций для решения системы A * X = I
+
+    # Для каждого физического лица, решаем A * x = e, где e - единичный вектор
+    from scipy.sparse.linalg import bicgstab
+
+    ultimate_ownership = csr_matrix((M.shape[0], M.shape[0]), dtype=np.float64)
+
+    for person_idx in natural_person_indices:
+        e = np.zeros(M.shape[0])
+        e[person_idx] = 1.0
+        x, info = bicgstab(A, e, tol=tol, maxiter=max_iterations)
+        if info == 0:
+            ultimate_ownership[person_idx] = x
+        else:
+            print(f"Warning: Метод итераций не сошёлся для индекса {person_idx}")
+    
+    return ultimate_ownership
+
 
 def get_natural_to_company_ownership(ultimate_ownership, natural_person_indices, idx_to_entity):
     """

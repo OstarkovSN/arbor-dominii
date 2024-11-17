@@ -39,18 +39,40 @@ def impute_data_slow(founder_natural_df):
     return founder_natural_df
 
 
+
 def impute_data_fast(founder_natural_df):
     preserve_df = founder_natural_df.copy()
-    founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].apply(str) + founder_natural_df['inn'].apply(str)
+    founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].astype(str) + founder_natural_df['inn'].astype(str)
+    
+    # Переставляем строки в обратном порядке
     founder_natural_df = founder_natural_df[::-1]
-    founder_natural_df['evaluate'] = founder_natural_df['share'] / founder_natural_df['share_percent']
-    founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].apply(str) + founder_natural_df['inn'].apply(str)
+    
+    # Избегаем деления на ноль
+    founder_natural_df = founder_natural_df.copy()
+    founder_natural_df.loc[founder_natural_df['share_percent'] != 0, 'evaluate'] = founder_natural_df['share'] / founder_natural_df['share_percent']
+    
+    founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].astype(str) + founder_natural_df['inn'].astype(str)
+    
+    # Фильтруем ненулевые доли
     founder_natural_df = founder_natural_df[founder_natural_df['share_percent'] != 0]
     founder_natural_df = founder_natural_df.dropna(subset=['share', 'share_percent', 'evaluate'])
     founder_natural_df = founder_natural_df.drop_duplicates(subset=['company_id'])
-
-    merged_df = preserve_df.merge(founder_natural_df, on='company_id')
-    merged_df['share_percent'] = merged_df['share_x'] / merged_df['evaluate']
-    lol_df = merged_df.drop(columns=['id_y','inn_y','last_name_y','first_name_y','second_name_y','share_y','share_percent_y'])
-    lol_df = lol_df.rename(columns={'id_x': 'id', 'inn_x': 'inn', 'last_name_x':'last_name', 'first_name_x':'first_name', 'second_name_x':'second_name', 'share_x':'share'})
+    
+    # Объединяем с preserve_df
+    merged_df = preserve_df.merge(founder_natural_df, on='company_id', suffixes=('_x', '_y'))
+    merged_df.loc[:, 'share_percent'] = merged_df['share_x'] / merged_df['evaluate']
+    
+    # Оставляем только необходимые столбцы
+    lol_df = merged_df.drop(columns=[
+        'id_y', 'inn_y', 'last_name_y', 'first_name_y', 'second_name_y', 
+        'share_y', 'share_percent_y'
+    ])
+    lol_df = lol_df.rename(columns={
+        'id_x': 'id', 
+        'inn_x': 'inn', 
+        'last_name_x': 'last_name', 
+        'first_name_x': 'first_name', 
+        'second_name_x': 'second_name', 
+        'share_x': 'share'
+    })
     return lol_df
