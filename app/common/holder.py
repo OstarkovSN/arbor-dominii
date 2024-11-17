@@ -8,13 +8,14 @@ class Holder:
         self.holders = holders
         self.income = 0
     
-    def receive_income(self, new_income, terminator):
+    def receive_income(self, new_income, terminator, tol_income=0.5):
         self.income += new_income 
         if not terminator.check():
             for holder, share in self.holders:
                 to_propagate = new_income * share 
-                self.income -= to_propagate
-                holder.receive_income(to_propagate, terminator)
+                if to_propagate > tol_income:
+                    self.income -= to_propagate
+                    holder.receive_income(to_propagate, terminator)
 
 class HoldersList:
     def __init__(
@@ -37,12 +38,12 @@ class HoldersList:
     def total_income(self):
         total = 0
         for holder_id in self.holder:
-            total += self.holder[holder_id]
+            total += self.holder[holder_id].sum
         return total
     
     def reset_income(self):
         for holder_id in self.holder:
-            self.holder[holder_id] = 0
+            self.holder[holder_id].sum = 0
 
 def join_holders_lists(holders_list1, holders_list2):
     joined = HoldersList([], [])
@@ -121,7 +122,7 @@ def build_tree(
 
 
 class Terminator:
-    def __init__(self, terminal, threshold, steps_until_checkpoint=1000, total_steps=1e7):
+    def __init__(self, terminal, threshold, steps_until_checkpoint=10, total_steps=1e7):
         self.terminal = terminal
         self.threshold = threshold
         self.steps_until_checkpoint = steps_until_checkpoint 
@@ -141,7 +142,9 @@ class Terminator:
         return self.terminated
     
     def check_terminating_condition(self):
-        return self.terminal.total_income() > self.threshold
+        t = self.terminal.total_income()
+        print(t)
+        return t > self.threshold
 
 
 def total_reset(*holders_lists):
@@ -149,14 +152,17 @@ def total_reset(*holders_lists):
         holders_list.reset_income()
 
 
-def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=100, threshold_percent=0.99):
+def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=1, threshold_percent=0.99):
     terminator = Terminator(terminal, threshold=threshold_percent * start_income)  
-    indirect_shares_OF_IN = { holder_id : {} for holder_id in terminal.ids }
+    indirect_shares_OF_IN = { holder_id : {} for holder_id in terminal.holder }
 
-    for nonterminal_id in nonterminal.ids:
+    cnt = 0
+    for nonterminal_id in nonterminal.holder:
+        cnt += 1
+        print('AHAHAAHA', cnt)
         total_reset(nonterminal, terminal)
         nonterminal[nonterminal_id].receive_income(start_income, terminator)
-        for terminal_id in terminal.ids:
+        for terminal_id in terminal.holder:
             indirect_shares_OF_IN[terminal_id][nonterminal_id] = terminal[terminal_id].sum
     return indirect_shares_OF_IN
 
