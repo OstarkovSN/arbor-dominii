@@ -46,9 +46,10 @@ class Configuration:
 
         # Get the base configuration
         base_config = PREMADE_CONFIGS[default_config_name]
-        for key in base_config.keys():
-            if key.startswith('_'):
-                warnings.warn('Trying to set a protected key: ' + key)
+        if default_config_name != 'default':
+            for key in base_config.keys():
+                if key.startswith('_'):
+                    warnings.warn('Trying to set a protected key: ' + key)
 
         # Update the base configuration with the default values from even more default configuration if they are not present
         # This is to ensure that all the default values are present in the base configuration

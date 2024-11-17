@@ -93,3 +93,60 @@ def preprocess_folder(folder_path: str, output_folder_path: str, preprocessors: 
         output_path = os.path.join(output_folder_path, filename)
         process_file(file_path, output_path, preprocessors)
 
+def get_dfs(company_path, founder_natural_path, founder_legal_path):
+    df_company = pd.read_table(
+        company_path,
+        header=0,
+        dtype={
+            'id': 'Int64',
+            'ogrn': 'string',
+            'inn': 'string',
+            'full_name': 'string'
+        },
+        na_values=['', ' ', 'NA', 'nan']
+    )
+
+    df_founder_natural = pd.read_table(
+        founder_natural_path,
+        header=0,
+        dtype={
+            'id': 'Int64',
+            'company_id': 'Int64', # id компании которой владеют
+            'inn': 'string',
+            'last_name': 'string',
+            'first_name': 'string',
+            'second_name': 'string',
+            'share': 'float',
+            'share_percent': 'float'
+        },
+        na_values=['', ' ', 'NA', 'nan']
+    )
+    
+
+    df_founder_legal = pd.read_table(
+        founder_legal_path,
+        header=0,
+        dtype={
+            'id': 'Int64',
+            'company_id': 'Int64', # id компании которой владеют
+            'ogrn': 'string',
+            'inn': 'string',
+            'full_name': 'string',
+            'share': 'float',
+            'share_percent': 'float'
+        },
+        na_values=['', ' ', 'NA', 'nan']
+    )
+
+    if df_company['ogrn'].duplicated().any():
+        raise ValueError("Столбец 'ogrn' в df_company содержит дубликаты.")
+
+    # * Добавляем колонку owner_id
+    df_founder_legal = df_founder_legal.merge( 
+        df_company[['ogrn', 'id']].rename(columns={'id': 'owner_id'}),
+        on='ogrn',
+        how='left'
+    )
+
+    return df_company, df_founder_legal, df_founder_natural
+

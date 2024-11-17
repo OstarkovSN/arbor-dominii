@@ -69,6 +69,6 @@ def write_to_tsv(data: Generator[Tuple[str, ...], None, None], filename):
     with open(filename, 'w', encoding='utf-8') as f:
         f.write('\n'.join(['\t'.join(row) for row in data]))
 
-def postprocess_default(indirect_shares, df_companies: Dict[str, Tuple[str, ...]]):
+def postprocess_default(indirect_shares, df_companies: Dict[str, Tuple[str, ...]], final_filepath):
     beneficiares_of_companies = process_kopeika_algorihm_output(indirect_shares, df_companies)
-    write_to_tsv(create_writable_results(beneficiares_of_companies), 'results.tsv')
+    write_to_tsv(create_writable_results(beneficiares_of_companies), final_filepath)
