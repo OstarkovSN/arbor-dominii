@@ -5,6 +5,7 @@ import os
 import re
 import warnings
 from app.common.preprocess import CompanyNamesMerger, QMRemover
+from app.common.impute import impute_data_fast, impute_data_slow
 
 PREMADE_CONFIGS = {}
 
@@ -17,6 +18,10 @@ MAPPINGS = {
     'preprocessing': {
         'CompanyNamesMerger': CompanyNamesMerger(),
         'QMRemover': QMRemover()
+    },
+    'impute': {
+        'fast': impute_data_fast,
+        'slow': impute_data_slow
     }
 }
 

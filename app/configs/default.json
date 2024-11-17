@@ -10,5 +10,6 @@
         "CompanyNamesMerger",
         "QMRemover"
     ],
+    "impute": "fast",
     "_filename": ""
 }
