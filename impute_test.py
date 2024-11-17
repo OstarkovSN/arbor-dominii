@@ -57,31 +57,37 @@ def impute_data_fast(founder_natural_df):
     lol_df = lol_df.rename(columns={'id_x': 'id', 'inn_x': 'inn', 'last_name_x':'last_name', 'first_name_x':'first_name', 'second_name_x':'second_name', 'share_x':'share'})
     return lol_df
 
+
+
 founder_natural_df = pd.read_csv('founder_natural.tsv', sep='\t')
+print(founder_natural_df)
 
-preserve_df = founder_natural_df.copy()
-founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].apply(str) + founder_natural_df['inn'].apply(str)
-founder_natural_df['evaluate'] = founder_natural_df['share'] / founder_natural_df['share_percent']
-# founder_natural_df = founder_natural_df.dropna(subset=['share', 'share_percent', 'evaluate'])
+result = impute_data_fast(founder_natural_df).dropna()
 
-# result = result.drop_duplicates(subset=['company_id_inn'])
-print(founder_natural_df.head(20))
+print(result)
+# preserve_df = founder_natural_df.copy()
+# founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].apply(str) + founder_natural_df['inn'].apply(str)
+# founder_natural_df['evaluate'] = founder_natural_df['share'] / founder_natural_df['share_percent']
+# # founder_natural_df = founder_natural_df.dropna(subset=['share', 'share_percent', 'evaluate'])
 
-companies = founder_natural_df['company_id'].unique()
-print(companies)
+# # result = result.drop_duplicates(subset=['company_id_inn'])
+# print(founder_natural_df.head(20))
+
+# companies = founder_natural_df['company_id'].unique()
+# print(companies)
 
 
-for el in companies[0:]:
-    df_unique = founder_natural_df.loc[founder_natural_df['company_id'] == el]
-    sum_unique_percent = df_unique['share_percent'].sum()
+# for el in companies[0:]:
+#     df_unique = founder_natural_df.loc[founder_natural_df['company_id'] == el]
+#     sum_unique_percent = df_unique['share_percent'].sum()
 
-    y = df_unique["evaluate"].to_numpy()
-    x = np.arange(0,len(y))
-    if len(y) > 1:
-        # print(arr)
-        # print(df_unique)
-        plt.plot(x,y)
-plt.show()
+#     y = df_unique["evaluate"].to_numpy()
+#     x = np.arange(0,len(y))
+#     if len(y) > 1:
+#         # print(arr)
+#         # print(df_unique)
+#         plt.plot(x,y)
+# plt.show()
 
 
 # companies_inn = founder_natural_df['company_id_inn'].unique()
