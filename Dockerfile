@@ -14,6 +14,8 @@ COPY /app /harbour/app
 
 COPY main.py /harbour/
 
+COPY flags/docker=True.flag /harbour/docker.flag
+
 EXPOSE 1488
 
 CMD ["poetry", "run", "python", "main.py"]
