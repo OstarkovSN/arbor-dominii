@@ -12,14 +12,15 @@ def process_kopeika_algorihm_output(indirect_shares, df_companies: pd.DataFrame)
     dict_companies = {}
     
     for _, company_id, ogrn, inn, full_name in df_companies.itertuples():
-        dict_companies[company_id] = (ogrn, inn, full_name)
+        dict_companies[ogrn] = (str(company_id), inn, full_name)
     
     res = {}
-    for company_id, shares in indirect_shares.items():
-        company = dict_companies[company_id]
-        beneficiaries = {beneficiary_identifier : share
-            for beneficiary_identifier, share in shares.items()
-            if share > 0.25}
+    for ogrn, shares in indirect_shares.items():
+        company = dict_companies[ogrn]
+        beneficiaries = {}
+        for beneficiary, share in shares.items():
+            beneficiary = tuple(beneficiary.split('#'))
+            beneficiaries[beneficiary] = share
         res[company] = (beneficiaries)
     return res
             

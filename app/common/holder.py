@@ -109,25 +109,19 @@ def build_tree(
     founder_natural_df = founder_natural_df.dropna()
 
     # create nodes
-    print('Haha')
     nonterminals1 = HoldersList(*create_nodes(founder_legal_df_nonterminal, 'ogrn'))
     nonterminals2 =  HoldersList(*create_nodes(company_df, 'ogrn', forbidden_ids=nonterminals1.holder))
     nonterminals = join_holders_lists(nonterminals1, nonterminals2)
-    print('Hehe')
     terminals1 = HoldersList(*create_nodes(natural_df, 'full_credentials'))
     terminals2 = HoldersList(*create_nodes(founder_legal_df, 'ogrn'))
     terminals = join_holders_lists(terminals1, terminals2)
-    print('Hihi')
    
     # create edges
     all = join_holders_lists(nonterminals, terminals)
-    print('A')
-
-    print('B')
     add_edges(all, founder_legal_df, founder_label='ogrn', property_label='company_ogrn')
     add_edges(all, founder_natural_df, founder_label='full_credentials', property_label='company_ogrn')
 
-    return nonterminals, terminals
+    return nonterminals, terminals, terminals1
 
 
 class Terminator:
@@ -152,7 +146,6 @@ class Terminator:
     
     def check_terminating_condition(self):
         t = self.terminal.total_income()
-        print(t)
         return t > self.threshold
 
 
@@ -161,16 +154,18 @@ def total_reset(*holders_lists):
         holders_list.reset_income()
 
 
-def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=1, threshold_percent=0.99):
+def iteratively_estimate_indirect_shares(nonterminal, terminal, humans, start_income=1, threshold_percent=0.99):
     terminator = Terminator(terminal, threshold=threshold_percent * start_income)  
-    indirect_shares_OF_IN = { holder_id : {} for holder_id in terminal.holder }
+    indirect_shares_OF_IN = {}
 
     cnt = 0
     for nonterminal_id in nonterminal.holder:
         cnt += 1
-        print('AHAHAAHA', cnt)
         total_reset(nonterminal, terminal)
         nonterminal[nonterminal_id].receive_income(start_income, terminator)
-        for terminal_id in terminal.holder:
-            indirect_shares_OF_IN[terminal_id][nonterminal_id] = terminal[terminal_id].sum
+        for human_id in humans.holder:
+            if humans[human_id].sum > 0.25:
+                if nonterminal_id not in indirect_shares_OF_IN:
+                    indirect_shares_OF_IN[nonterminal_id] = {}
+                indirect_shares_OF_IN[nonterminal_id][human_id] = humans[human_id].sum
     return indirect_shares_OF_IN

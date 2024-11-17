@@ -15,7 +15,7 @@ def kopeika(
         founder_legal_df_terminal,
         founder_natural_df,
 ):
-    nonterminal, terminal = build_tree(
+    nonterminal, terminal, humans = build_tree(
         company_df=company_df,
         natural_df=natural_df,
         founder_legal_df=founder_legal_df,
@@ -28,6 +28,7 @@ def kopeika(
     indirect_shares = iteratively_estimate_indirect_shares(
         nonterminal=nonterminal,
         terminal=terminal,
+        humans=humans,
     )
     print('Done')
     
