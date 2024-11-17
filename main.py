@@ -118,15 +118,16 @@ def kopeika(
     return indirect_shares
 
 def mk_natural(founder_natural_df):
-    natural_df = pd.DataFrame()
-    natural_df['full_name'] =  \
+    founder_natural_df['full_name'] =  \
      founder_natural_df['last_name'] + ' ' \
       + founder_natural_df['first_name'] + ' ' \
        + founder_natural_df['second_name']
+
+    founder_natural_df['full_credentials'] = founder_natural_df['inn'].astype(str) + \
+        '#' + founder_natural_df['full_name']
     
-    natural_df['inn'] = founder_natural_df['inn']
+    natural_df = founder_natural_df[['full_credentials', 'inn']]
     natural_df = natural_df.drop_duplicates()
-    natural_df['full_credentials'] = natural_df['inn'].astype(str) + '#' + natural_df['full_name']
     return natural_df
 
 

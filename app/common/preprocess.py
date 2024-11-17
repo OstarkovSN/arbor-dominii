@@ -38,6 +38,7 @@ class CompanyNamesMerger(Preprocessor):
         return '\n'.join(processed_lines)  # Возвращаем объединенные строки вместо списка строк
 
 
+
 class QMCloser(Preprocessor):
     """
     Закрывает незакрытые кавычки в строках.
@@ -157,28 +158,41 @@ def get_dfs(folder_path='data/processed'):
     if df_company['ogrn'].duplicated().any():
         raise ValueError("Столбец 'ogrn' в df_company содержит дубликаты.")
 
-    # * Добавляем колонку owner_id
+    df_founder_natural = df_founder_natural.merge( 
+        df_company[['ogrn', 'id']].rename(columns={'id': 'company_id', 'ogrn': 'company_ogrn'}),
+        on='company_id',
+        how='left'
+    )
     df_founder_legal = df_founder_legal.merge( 
         df_company[['ogrn', 'id']].rename(columns={'id': 'company_id', 'ogrn': 'company_ogrn'}),
         on='company_id',
         how='left'
     )
+    print(df_founder_legal.columns)
 
-    nonterminal_ogrns = set(df_company['ogrn'])
+    nonterminal_ogrns = set(df_founder_legal['company_ogrn'])
+    print('1001601570410' in nonterminal_ogrns)
+    print('A', len(nonterminal_ogrns))
+    
+    #print(df_founder_legal[df_founder_legal['company_ogrn'].isnull()])
 
     nonterminal_rows = []
     terminal_rows = []
-    ogrn_index = df_founder_legal.columns.get_loc('ogrn')
+    ogrn_index = df_founder_legal.columns.get_loc('ogrn') + 1
     for row in df_founder_legal.itertuples():
         i = row[0]
         ogrn = row[ogrn_index]
         if ogrn in nonterminal_ogrns:
+            if ogrn == '1001601570410':
+                print('HELLo')
             nonterminal_rows.append(i)
         else:
             terminal_rows.append(i)
-    df_founder_legal_nonterminal = df_founder_legal[nonterminal_rows]
-    df_founder_legal_terminal = df_founder_legal[terminal_rows]
-            
+    print('N', len(nonterminal_rows))
+    print('T', len(terminal_rows))
+    df_founder_legal_nonterminal = df_founder_legal.iloc[nonterminal_rows]
+    df_founder_legal_terminal = df_founder_legal.iloc[terminal_rows]
+
     return df_company, df_founder_legal, df_founder_legal_nonterminal, df_founder_legal_terminal, df_founder_natural
 
 
