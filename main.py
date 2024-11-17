@@ -29,6 +29,7 @@ def kopeika(
         nonterminal=nonterminal,
         terminal=terminal,
         humans=humans,
+        use_tqdm=CONFIG['use-tqdm']
     )
     print('Done')
     

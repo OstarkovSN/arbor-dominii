@@ -1,4 +1,5 @@
 from collections import deque
+from tqdm.auto import tqdm
 
 class Holder:
     def __init__(
@@ -154,12 +155,17 @@ def total_reset(*holders_lists):
         holders_list.reset_income()
 
 
-def iteratively_estimate_indirect_shares(nonterminal, terminal, humans, start_income=1, threshold_percent=0.99):
+def iteratively_estimate_indirect_shares(nonterminal, terminal, humans, start_income=1, threshold_percent=0.99, use_tqdm=False):
     terminator = Terminator(terminal, threshold=threshold_percent * start_income)  
     indirect_shares_OF_IN = {}
 
     cnt = 0
-    for nonterminal_id in nonterminal.holder:
+    if use_tqdm:
+        bar = tqdm(nonterminal.holder)
+    else:
+        bar = nonterminal.holder
+    
+    for nonterminal_id in bar:
         cnt += 1
         total_reset(nonterminal, terminal)
         nonterminal[nonterminal_id].receive_income(start_income, terminator)
