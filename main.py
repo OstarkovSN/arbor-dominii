@@ -143,7 +143,6 @@ if __name__ == "__main__":
         print(f"Отсутствующие company_id в company.tsv: {missing_company_ids}")
 
 
-=======
     print('Start1')
     indirect_shares = kopeika(
         company_df=company_df,

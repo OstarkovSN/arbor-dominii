@@ -1,3 +1,5 @@
+from collections import deque
+
 class Holder:
     def __init__(
             self,
@@ -8,14 +10,23 @@ class Holder:
         self.holders = holders
         self.income = 0
     
-    def receive_income(self, new_income, terminator, tol_income=0.5):
-        self.income += new_income 
-        if not terminator.check():
-            for holder, share in self.holders:
-                to_propagate = new_income * share 
+    def receive_income(self, new_income, terminator, tol_income=0.01, max_iter=1e5):
+        # append and popleft
+        queue = deque([(self, new_income)])
+        while len(queue) > 0 and max_iter > 0:
+            max_iter -= 1
+
+            current, current_income = queue.popleft()
+            current.sum += current_income
+
+            if terminator.check():
+                break
+
+            for holder, share in current.holders:
+                to_propagate = current_income * share 
                 if to_propagate > tol_income:
-                    self.income -= to_propagate
-                    holder.receive_income(to_propagate, terminator)
+                    current.income -= to_propagate
+                    queue.append((holder, to_propagate))
 
 class HoldersList:
     def __init__(
