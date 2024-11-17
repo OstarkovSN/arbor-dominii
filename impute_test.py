@@ -1,5 +1,7 @@
 # from app.common.impute import impute_df
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 def impute_data_long(founder_natural_df):
     founder_natural_df = pd.read_csv('founder_natural.tsv', sep='\t')
@@ -56,14 +58,41 @@ def impute_data_fast(founder_natural_df):
     return lol_df
 
 founder_natural_df = pd.read_csv('founder_natural.tsv', sep='\t')
-result = impute_data_fast(founder_natural_df).drop_duplicates(subset=['company_id_inn'])
-print(result.head(20))
 
-companies = result['company_id'].unique()
+preserve_df = founder_natural_df.copy()
+founder_natural_df['company_id_inn'] = founder_natural_df['company_id'].apply(str) + founder_natural_df['inn'].apply(str)
+founder_natural_df['evaluate'] = founder_natural_df['share'] / founder_natural_df['share_percent']
+# founder_natural_df = founder_natural_df.dropna(subset=['share', 'share_percent', 'evaluate'])
+
+# result = result.drop_duplicates(subset=['company_id_inn'])
+print(founder_natural_df.head(20))
+
+companies = founder_natural_df['company_id'].unique()
 print(companies)
 
-for el in companies[0:40]:
-    df_unique = result.loc[result['company_id'] == el]
+
+for el in companies[0:]:
+    df_unique = founder_natural_df.loc[founder_natural_df['company_id'] == el]
     sum_unique_percent = df_unique['share_percent'].sum()
-    print(sum_unique_percent)
-    print(df_unique)
+
+    y = df_unique["evaluate"].to_numpy()
+    x = np.arange(0,len(y))
+    if len(y) > 1:
+        # print(arr)
+        # print(df_unique)
+        plt.plot(x,y)
+plt.show()
+
+
+# companies_inn = founder_natural_df['company_id_inn'].unique()
+# print(companies_inn)
+
+# for el in companies:
+#     df_unique = founder_natural_df.loc[founder_natural_df['company_id_inn'] == el]
+
+#     arr = df_unique["evaluate"].to_numpy()
+#     if len(arr) > 1:
+#         print(arr)
+#         print(df_unique)
+#         plt.plot(arr)
+#         plt.show()
