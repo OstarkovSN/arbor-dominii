@@ -137,16 +137,56 @@ def get_dfs(company_path, founder_natural_path, founder_legal_path):
         },
         na_values=['', ' ', 'NA', 'nan']
     )
-
     if df_company['ogrn'].duplicated().any():
         raise ValueError("Столбец 'ogrn' в df_company содержит дубликаты.")
 
-    # * Добавляем колонку owner_id
-    df_founder_legal = df_founder_legal.merge( 
-        df_company[['ogrn', 'id']].rename(columns={'id': 'owner_id'}),
-        on='ogrn',
+    df_founder_natural = df_founder_natural.merge( 
+        df_company[['ogrn', 'id']].rename(columns={'id': 'company_id', 'ogrn': 'company_ogrn'}),
+        on='company_id',
         how='left'
     )
+    df_founder_legal = df_founder_legal.merge( 
+        df_company[['ogrn', 'id']].rename(columns={'id': 'company_id', 'ogrn': 'company_ogrn'}),
+        on='company_id',
+        how='left'
+    )
+    print(df_founder_legal.columns)
 
-    return df_company, df_founder_legal, df_founder_natural
+    nonterminal_ogrns = set(df_founder_legal['company_ogrn'])
+    print('1001601570410' in nonterminal_ogrns)
+    print('A', len(nonterminal_ogrns))
+    
+    #print(df_founder_legal[df_founder_legal['company_ogrn'].isnull()])
+
+    nonterminal_rows = []
+    terminal_rows = []
+    ogrn_index = df_founder_legal.columns.get_loc('ogrn') + 1
+    for row in df_founder_legal.itertuples():
+        i = row[0]
+        ogrn = row[ogrn_index]
+        if ogrn in nonterminal_ogrns:
+            if ogrn == '1001601570410':
+                print('HELLo')
+            nonterminal_rows.append(i)
+        else:
+            terminal_rows.append(i)
+    print('N', len(nonterminal_rows))
+    print('T', len(terminal_rows))
+    df_founder_legal_nonterminal = df_founder_legal.iloc[nonterminal_rows]
+    df_founder_legal_terminal = df_founder_legal.iloc[terminal_rows]
+
+    return df_company, df_founder_legal, df_founder_legal_nonterminal, df_founder_legal_terminal, df_founder_natural
+
+def mk_natural(founder_natural_df):
+    founder_natural_df['full_name'] =  \
+     founder_natural_df['last_name'] + ' ' \
+      + founder_natural_df['first_name'] + ' ' \
+       + founder_natural_df['second_name']
+
+    founder_natural_df['full_credentials'] = founder_natural_df['inn'].astype(str) + \
+        '#' + founder_natural_df['full_name']
+    
+    natural_df = founder_natural_df[['full_credentials', 'inn']]
+    natural_df = natural_df.drop_duplicates()
+    return natural_df
 

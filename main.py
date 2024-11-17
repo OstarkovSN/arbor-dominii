@@ -1,47 +1,44 @@
 import os
 
 import pandas as pd
-from app.common.holder import HoldersList, Holder, iteratively_estimate_indirect_shares
-
-from app.common.preprocess import preprocess_folder, get_dfs
+from app.common.holder import HoldersList, Holder, iteratively_estimate_indirect_shares, build_tree
+from app.common.preprocess import preprocess_folder, get_dfs, mk_natural
 from app.common.postprocess import postprocess_default
 import pandas as pd
 
 from app.common.config import Configuration
+def kopeika(
+        company_df,
+        natural_df,
+        founder_legal_df,
+        founder_legal_df_nonterminal,
+        founder_legal_df_terminal,
+        founder_natural_df,
+):
+    nonterminal, terminal = build_tree(
+        company_df=company_df,
+        natural_df=natural_df,
+        founder_legal_df=founder_legal_df,
+        founder_legal_df_nonterminal=founder_legal_df_nonterminal,
+        founder_legal_df_terminal=founder_legal_df_terminal,
+        founder_natural_df=founder_natural_df,
+    )
 
-def kopeika(company_df,founder_legal_df,founder_natural_df):
-
-    # Создаем структуру владения
-    structure = OwnershipStructure(company_df, founder_legal_df, founder_natural_df)
-
-    # Преобразуем данные в формат для Holder
-    holders, holder_ids = [], []
-    for company_id, company in structure.companies.items():
-        holders.append(
-            Holder(
-                id=company_id,
-                shares=[
-                    (owner['id'], owner['share_percent'] / 100)
-                    for owner in company['owners']
-                    if owner['type'] == 'legal'
-                ],
-                holders=[]
-            )
-        )
-        holder_ids.append(company_id)
-
-    # Инициализируем HoldersList
-    holders_list = HoldersList(holders, holder_ids)
-
-    # Вычисляем косвенные доли
-    indirect_shares = iteratively_estimate_indirect_shares(holders_list, holders_list)
+    print('Start2')
+    indirect_shares = iteratively_estimate_indirect_shares(
+        nonterminal=nonterminal,
+        terminal=terminal,
+    )
+    print('Done')
     
     return indirect_shares
 
 if __name__ == "__main__":
-    try:
-        CONFIG = Configuration('environment/config.json') #if we are in docker
-    except FileNotFoundError:
+    with open('docker.flag', 'r') as f:
+        is_docker = f.read().strip() == 'True'
+    if is_docker:
+        CONFIG = Configuration('environment/config_docker.json') #if we are in docker
+    else:
         try:
             CONFIG = Configuration('config.json') #if we are in local
         except FileNotFoundError:
@@ -55,14 +52,23 @@ if __name__ == "__main__":
                     CONFIG['processed/'],
                     CONFIG['preprocessing'])
 
-    company_df, founder_legal_df, founder_natural_df = get_dfs(CONFIG['processed/company'], CONFIG['processed/founder_legal'], CONFIG['processed/founder_natural'])
+    company_df, founder_legal_df, founder_legal_df_nonterminal, founder_legal_df_terminal, founder_natural_df = get_dfs(CONFIG['processed/company'], CONFIG['processed/founder_natural'], CONFIG['processed/founder_legal'])
 
+    natural_df = CONFIG['impute'](founder_natural_df)
+    
+    natural_df = mk_natural(founder_natural_df)
+    
     # Проверка наличия несоответствий
     missing_company_ids = set(founder_legal_df['company_id']) - set(company_df['id'])
     if missing_company_ids:
         print(f"Отсутствующие company_id в company.tsv: {missing_company_ids}")
 
 
-    indirect_shares = kopeika(company_df=company_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
+    indirect_shares = kopeika(company_df=company_df,
+                              founder_legal_df=founder_legal_df,
+                              founder_natural_df=founder_natural_df,
+                              natural_df=natural_df,
+                              founder_legal_df_nonterminal=founder_legal_df_nonterminal,
+                              founder_legal_df_terminal=founder_legal_df_terminal)
     
-    postprocess_default(indirect_shares, comps, final_filepath=CONFIG['final/results']) #FIXME
+    postprocess_default(indirect_shares, df_companies=company_df, final_filepath=CONFIG['final/results']) #FIXME

@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple, Generator
 import pandas as pd
 
-def process_kopeika_algorihm_output(indirect_shares, df_companies: Dict[str, Tuple[str, ...]]):
+def process_kopeika_algorihm_output(indirect_shares, df_companies: pd.DataFrame) -> Dict[Tuple[str], Dict[Tuple[str, str], float]]:
     """
     Yields a tuple containing a list of strings representing a company and a dictionary representing the beneficiaries of the company.
     
@@ -9,9 +9,14 @@ def process_kopeika_algorihm_output(indirect_shares, df_companies: Dict[str, Tup
     
     The beneficiaries are considered to be those who own more than 25% of the shares of the company.
     """
+    dict_companies = {}
+    
+    for _, company_id, ogrn, inn, full_name in df_companies.itertuples():
+        dict_companies[company_id] = (ogrn, inn, full_name)
+    
     res = {}
     for company_id, shares in indirect_shares.items():
-        company = df_companies[company_id]
+        company = dict_companies[company_id]
         beneficiaries = {beneficiary_identifier : share
             for beneficiary_identifier, share in shares.items()
             if share > 0.25}
@@ -69,6 +74,6 @@ def write_to_tsv(data: Generator[Tuple[str, ...], None, None], filename):
     with open(filename, 'w', encoding='utf-8') as f:
         f.write('\n'.join(['\t'.join(row) for row in data]))
 
-def postprocess_default(indirect_shares, df_companies: Dict[str, Tuple[str, ...]], final_filepath):
+def postprocess_default(indirect_shares, df_companies: pd.DataFrame, final_filepath):
     beneficiares_of_companies = process_kopeika_algorihm_output(indirect_shares, df_companies)
     write_to_tsv(create_writable_results(beneficiares_of_companies), final_filepath)
