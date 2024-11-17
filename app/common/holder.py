@@ -49,28 +49,32 @@ def join_holders_lists(holders_list1, holders_list2):
     joined.holder = holders_list1.holder | holders_list2.holder
     return joined
 
-def create_nodes(df, label):
+def create_nodes(df, label, forbidden_ids=None):
+    if forbidden_ids is None:
+        forbidden_ids = {}
+    
     # ASSUMING NO DUPLICATES
     holders = []
     ids = []
 
-    label_index = df.columns.get_loc(label)
+    label_index = df.columns.get_loc(label) + 1
     for row in df.itertuples():
         new_id = row[label_index]
-        new_holder = Holder(
-            id=new_id,
-            holders=[] # will fill in on next step!
-        )
-        holders.append(new_holder)
-        ids.append(new_id)
+        if new_id not in forbidden_ids:
+            new_holder = Holder(
+                id=new_id,
+                holders=[] # will fill in on next step!
+            )
+            holders.append(new_holder)
+            ids.append(new_id)
 
     return holders, ids
 
 
 def add_edges(holders, founders_df, founder_label, property_label, share_label='share_percent'):
-    founder_index = founders_df.columns.get_loc(founder_label)
-    property_index = founders_df.columns.get_loc(property_label)
-    share_index = founders_df.columns.get_loc(share_label)
+    founder_index = founders_df.columns.get_loc(founder_label) + 1
+    property_index = founders_df.columns.get_loc(property_label) + 1
+    share_index = founders_df.columns.get_loc(share_label) + 1
     for row in founders_df.itertuples():
         founder_id = row[founder_index]
         property_id = row[property_index]
@@ -86,18 +90,32 @@ def build_tree(
         founder_legal_df_terminal,
         founder_natural_df,
 ):
+    # ASSUMPTIONS
+    founder_legal_df = founder_legal_df.dropna()
+    founder_legal_df_nonterminal = founder_legal_df_nonterminal.dropna()
+    founder_legal_df_terminal = founder_legal_df_terminal.dropna()
+    founder_natural_df = founder_natural_df.dropna()
+
     # create nodes
-    # ASSUMING ALL TERMINALS ARE NATURAL
     print('Haha')
-    nonterminals = HoldersList(*create_nodes(founder_legal_df_nonterminal, 'ogrn'))
+    nonterminals1 = HoldersList(*create_nodes(founder_legal_df_nonterminal, 'ogrn'))
+    nonterminals2 =  HoldersList(*create_nodes(company_df, 'ogrn', forbidden_ids=nonterminals1.holder))
+    nonterminals = join_holders_lists(nonterminals1, nonterminals2)
     print('Hehe')
-    terminals = HoldersList(*create_nodes(natural_df, 'full_credentials'))
+    terminals1 = HoldersList(*create_nodes(natural_df, 'full_credentials'))
+    terminals2 = HoldersList(*create_nodes(founder_legal_df, 'ogrn'))
+    terminals = join_holders_lists(terminals1, terminals2)
     print('Hihi')
    
     # create edges
     all = join_holders_lists(nonterminals, terminals)
-    add_edges(all, founder_legal_df, founder_label='owner_id', property_label='company_id')
-    add_edges(all, founder_natural_df, founder_label='full_credentials', property_label='company_id')
+    print('A')
+
+    print(nonterminals.holder['1001601570410'])
+    #print(all.holder['1001601570410'])
+    print('B')
+    add_edges(all, founder_legal_df, founder_label='ogrn', property_label='company_ogrn')
+    add_edges(all, founder_natural_df, founder_label='full_credentials', property_label='company_ogrn')
 
     return nonterminals, terminals
 
