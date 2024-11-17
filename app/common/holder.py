@@ -47,6 +47,7 @@ class HoldersList:
 def join_holders_lists(holders_list1, holders_list2):
     joined = HoldersList([], [])
     joined.holder = holders_list1.holder | holders_list2.holder
+    return joined
 
 def create_nodes(df, label):
     # ASSUMING NO DUPLICATES
@@ -69,18 +70,26 @@ def create_nodes(df, label):
 def add_edges(holders, founders_df, founder_label, property_label, share_label='share_percent'):
     founder_index = founders_df.columns.get_loc(founder_label)
     property_index = founders_df.columns.get_loc(property_label)
+    share_index = founders_df.columns.get_loc(share_label)
     for row in founders_df.itertuples():
         founder_id = row[founder_index]
         property_id = row[property_index]
-        share = row[share_label]
+        share = row[share_index]
         holders.add_relation(founder_id, property_id, share)
 
  
-def build_tree(company_df, natural_df, founder_legal_df, founder_natural_df):
+def build_tree(
+        company_df,
+        natural_df,
+        founder_legal_df,
+        founder_legal_df_nonterminal,
+        founder_legal_df_terminal,
+        founder_natural_df,
+):
     # create nodes
     # ASSUMING ALL TERMINALS ARE NATURAL
     print('Haha')
-    nonterminals = HoldersList(*create_nodes(company_df, 'id'))
+    nonterminals = HoldersList(*create_nodes(founder_legal_df_nonterminal, 'ogrn'))
     print('Hehe')
     terminals = HoldersList(*create_nodes(natural_df, 'full_credentials'))
     print('Hihi')
@@ -128,7 +137,7 @@ def iteratively_estimate_indirect_shares(nonterminal, terminal, start_income=100
 
     for nonterminal_id in nonterminal.ids:
         total_reset(nonterminal, terminal)
-        nonterminal[nonterminal_id].receive_income(start_income)
+        nonterminal[nonterminal_id].receive_income(start_income, terminator)
         for terminal_id in terminal.ids:
             indirect_shares_OF_IN[terminal_id][nonterminal_id] = terminal[terminal_id].sum
     return indirect_shares_OF_IN

@@ -1,6 +1,8 @@
 import os
 from typing import Sequence
 import pandas as pd
+from pathlib import Path
+
 
 class Preprocessor:
     '''
@@ -106,7 +108,7 @@ def preprocess_default():
 def get_dfs(folder_path='data/processed'):
 
     df_company = pd.read_table(
-        'app\\data\\processed\\company.tsv',
+        Path('app')/'data'/'processed'/'company.tsv',
         header=0,
         dtype={
             'id': 'Int64',
@@ -118,7 +120,7 @@ def get_dfs(folder_path='data/processed'):
     )
 
     df_founder_natural = pd.read_table(
-        'app\\data\\processed\\founder_natural.tsv',
+        Path('app')/'data'/'processed'/'founder_natural.tsv',
         header=0,
         dtype={
             'id': 'Int64',
@@ -135,7 +137,7 @@ def get_dfs(folder_path='data/processed'):
     
 
     df_founder_legal = pd.read_table(
-        'app\\data\\processed\\founder_legal.tsv',
+        Path('app')/'data'/'processed'/'founder_legal.tsv',
         header=0,
         dtype={
             'id': 'Int64',
@@ -154,12 +156,27 @@ def get_dfs(folder_path='data/processed'):
 
     # * Добавляем колонку owner_id
     df_founder_legal = df_founder_legal.merge( 
-        df_company[['ogrn', 'id']].rename(columns={'id': 'owner_id'}),
-        on='ogrn',
+        df_company[['ogrn', 'id']].rename(columns={'id': 'company_id', 'ogrn': 'company_ogrn'}),
+        on='company_id',
         how='left'
     )
 
-    return df_company, df_founder_legal, df_founder_natural
+    nonterminal_ogrns = set(df_company['ogrn'])
+
+    nonterminal_rows = []
+    terminal_rows = []
+    ogrn_index = df_founder_legal.columns.get_loc('ogrn')
+    for row in df_founder_legal.itertuples():
+        i = row[0]
+        ogrn = row[ogrn_index]
+        if ogrn in nonterminal_ogrns:
+            nonterminal_rows.append(i)
+        else:
+            terminal_rows.append(i)
+    df_founder_legal_nonterminal = df_founder_legal[nonterminal_rows]
+    df_founder_legal_terminal = df_founder_legal[terminal_rows]
+            
+    return df_company, df_founder_legal, df_founder_legal_nonterminal, df_founder_legal_terminal, df_founder_natural
 
 
 
@@ -167,7 +184,7 @@ def get_dfs(folder_path='data/processed'):
 if __name__ == '__main__':
     preprocess_default()
 
-    df_company, df_founder_legal, df_founder_natural = get_dfs()
+    dfs = get_dfs()
 
-    for df in (df_company, df_founder_legal, df_founder_natural):
+    for df in dfs:
         print(df.head().to_string())

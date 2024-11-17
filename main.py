@@ -2,13 +2,22 @@ import os
 import pandas as pd
 from app.common.structure import OwnershipStructure
 from app.common.holder import HoldersList, Holder, iteratively_estimate_indirect_shares, build_tree
-from app.common.preprocess import preprocess_default
+from app.common.preprocess import preprocess_default, get_dfs
 
-def kopeika(company_df, natural_df, founder_legal_df, founder_natural_df):
+def kopeika(
+        company_df,
+        natural_df,
+        founder_legal_df,
+        founder_legal_df_nonterminal,
+        founder_legal_df_terminal,
+        founder_natural_df,
+):
     nonterminal, terminal = build_tree(
         company_df=company_df,
         natural_df=natural_df,
         founder_legal_df=founder_legal_df,
+        founder_legal_df_nonterminal=founder_legal_df_nonterminal,
+        founder_legal_df_terminal=founder_legal_df_terminal,
         founder_natural_df=founder_natural_df,
     )
 
@@ -51,11 +60,9 @@ def mk_natural(founder_natural_df):
 
 
 if __name__ == "__main__":
-    #preprocess_default()
+    preprocess_default()
 
-    company_df = pd.read_csv("app/data/processed/company.tsv", sep="\t")
-    founder_legal_df = pd.read_csv("app/data/processed/founder_legal.tsv", sep="\t")
-    founder_natural_df = pd.read_csv("app/data/processed/founder_natural.tsv", sep="\t")
+    company_df, founder_legal_df, founder_legal_df_nonterminal, founder_legal_df_terminal, founder_natural_df = get_dfs()
     natural_df = mk_natural(founder_natural_df)
 
     # Проверка наличия несоответствий
@@ -65,4 +72,11 @@ if __name__ == "__main__":
 
 
     print('Start1')
-    kopeika(company_df=company_df, natural_df=natural_df, founder_legal_df=founder_legal_df, founder_natural_df=founder_natural_df)
+    kopeika(
+        company_df=company_df,
+        natural_df=natural_df,
+        founder_legal_df=founder_legal_df,
+        founder_legal_df_nonterminal=founder_legal_df_nonterminal,
+        founder_legal_df_terminal=founder_legal_df_terminal,
+        founder_natural_df=founder_natural_df
+    )
